@@ -53,33 +53,25 @@ def send_data_to_kafka(producer, weather_data, topic):
     producer.flush()  # Ensure the message is sent
     print("message sent to kafka")
 
-# Delivery report callback
-def delivery_report(err, msg):
-    if err is not None:
-        print(f"Message delivery failed: {err}")
-    else:
-        print(f"Message delivered to {msg.topic()} [{msg.partition()}]")
 
 if __name__ == "__main__":
 
     station_id = os.getenv("STATION_ID")
-    # station_id = "asdasd-asdasd-asdas-1"
 
     if station_id == None:
         raise Exception("STATION_ID not set")
     else:
         weather_data["station_id"] = station_id = int(station_id.split("-")[-1]) + 1
-        # weather_data["station_id"] = station_id
-        print(f"station_id: {station_id}")
+        # print(f"station_id: {station_id}")
     
     KAFKA_BROKER = os.getenv("KAFKA_BROKER")
     KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
     # KAFKA_BROKER = "localhost:9092"
     # KAFKA_TOPIC = "weather_topic"
 
-    print(f"KAFKA_BROKER: {KAFKA_BROKER}")
-    print(f"KAFKA_TOPIC: {KAFKA_TOPIC}")
-    print("Starting weather station...")
+    # print(f"KAFKA_BROKER: {KAFKA_BROKER}")
+    # print(f"KAFKA_TOPIC: {KAFKA_TOPIC}")
+    # print("Starting weather station...")
 
     producer = KafkaProducer(
         bootstrap_servers=KAFKA_BROKER,

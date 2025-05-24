@@ -57,3 +57,16 @@ spec:
           ports:
             - containerPort: 9092
             - containerPort: 9093
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                  - /bin/bash
+                  - -c
+                  - |
+                    /opt/bitnami/kafka/bin/kafka-topics.sh \
+                      --create \
+                      --topic weather_topic \
+                      --bootstrap-server localhost:9092 \
+                      --partitions 1 \
+                      --replication-factor 1 \
