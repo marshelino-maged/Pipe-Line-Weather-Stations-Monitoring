@@ -2,7 +2,7 @@ import json
 import os
 import time
 import random
-from confluent_kafka import Producer
+from kafka import KafkaProducer
 
 # Template for the weather station data
 weather_data = {
@@ -45,10 +45,9 @@ def will_drop():
 
 
 def send_data_to_kafka(producer, weather_data, topic):
-    producer.produce(
+    producer.send(
         topic,
         value=json.dumps(weather_data),
-        callback=delivery_report
     )
     print(f"producing message to topic {topic}")
     producer.flush()  # Ensure the message is sent
@@ -63,27 +62,29 @@ def delivery_report(err, msg):
 
 if __name__ == "__main__":
 
-    # station_id = os.getenv("STATION_ID")
-    station_id = "1"
+    station_id = os.getenv("STATION_ID")
+    # station_id = "asdasd-asdasd-asdas-1"
 
     if station_id == None:
         raise Exception("STATION_ID not set")
     else:
-        weather_data["station_id"] = int(station_id)
+        weather_data["station_id"] = station_id = int(station_id.split("-")[-1]) + 1
+        # weather_data["station_id"] = station_id
+        print(f"station_id: {station_id}")
     
-    # KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
-    # KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "weather")
-    KAFKA_BROKER = "localhost:32092"
-    KAFKA_TOPIC = "weather_topic"
+    KAFKA_BROKER = os.getenv("KAFKA_BROKER")
+    KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
+    # KAFKA_BROKER = "localhost:9092"
+    # KAFKA_TOPIC = "weather_topic"
 
-    
-    producer_config = {
-        'bootstrap.servers': KAFKA_BROKER,
-        'client.id': weather_data["station_id"],
-        'security.protocol': 'PLAINTEXT',
-    }
+    print(f"KAFKA_BROKER: {KAFKA_BROKER}")
+    print(f"KAFKA_TOPIC: {KAFKA_TOPIC}")
+    print("Starting weather station...")
 
-    producer = Producer(producer_config)
+    producer = KafkaProducer(
+        bootstrap_servers=KAFKA_BROKER,
+        value_serializer=lambda x: json.dumps(x).encode('utf-8'),
+    )
     
     status_number = 0
     while(True):
@@ -100,7 +101,8 @@ if __name__ == "__main__":
             continue
 
         send_data_to_kafka(producer, weather_data, KAFKA_TOPIC)
-        # json_message = json.dumps(weather_data)
-        # print(json_message)
+
+        json_message = json.dumps(weather_data)
+        print(json_message)
 
         
