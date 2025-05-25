@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingester
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingester
+  template:
+    metadata:
+      labels:
+        app: ingester
+    spec:
+      containers:
+      - name: ingester
+        image: 
+        volumeMounts:
+        - name: incoming-volume
+          mountPath: /data/incoming
+        - name: processed-volume
+          mountPath: /data/processed
+      volumes:
+      - name: incoming-volume
+        hostPath:
+          path: ./ingest/data/incoming
+      - name: processed-volume
+        hostPath:
+          path: ./ingest/data/processed

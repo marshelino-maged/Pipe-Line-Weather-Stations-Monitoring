@@ -1,0 +1,51 @@
+# elasticsearch-kibana-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch-kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch-kibana
+  template:
+    metadata:
+      labels:
+        app: elasticsearch-kibana
+    spec:
+      containers:
+      - name: elasticsearch-kibana
+        image: nshou/elasticsearch-kibana
+        ports:
+        - containerPort: 9200
+        - containerPort: 5601
+        env:
+        - name: SSL_MODE
+          value: "false"
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+          successThreshold: 1
+
+---
+# elasticsearch-kibana-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-kibana
+spec:
+  selector:
+    app: elasticsearch-kibana
+  ports:
+    - name: http
+      port: 9200
+      targetPort: 9200
+    - name: kibana
+      port: 5601
+      targetPort: 5601
+  type: ClusterIP
