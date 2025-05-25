@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: weather-producer
+  name: meteo-station
 spec:
-  serviceName: "weather-producer-service"
+  serviceName: "meteo-station-service"
   replicas: 1
   selector:
     matchLabels:
-      app: weather-producer
+      app: meteo-station
   template:
     metadata:
       labels:
-        app: weather-producer
+        app: meteo-station
     spec:
       containers:
-        - name: weather-producer
-          image: weather_producer       
-          imagePullPolicy: Never        
+        - name: meteo-station
+          image: meteo_station
+          imagePullPolicy: Never
           env:
             - name: KAFKA_BROKER
               value: "kafka-service:9092"
             - name: KAFKA_TOPIC
-              value: "weather-topic"
+              value: "weather_topic"

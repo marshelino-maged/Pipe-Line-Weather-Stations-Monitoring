@@ -7,12 +7,12 @@ from datetime import datetime
 import os
 
 producer = KafkaProducer(
-    bootstrap_servers=os.getenv("KAFKA_BROKER", "localhost:9092"),
+    bootstrap_servers=os.getenv("KAFKA_BROKER"),
     value_serializer=lambda v: json.dumps(v).encode('utf-8'),
     key_serializer=lambda k: str(k).encode('utf-8')
 )
 
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "weather-topic")
+KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
 
 stations = [
     {"station_id": 11, "latitude": 30.0444, "longitude": 31.2357},  # Cairo
