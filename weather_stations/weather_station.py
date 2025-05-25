@@ -44,16 +44,6 @@ def will_drop():
         return False
 
 
-def send_data_to_kafka(producer, weather_data, topic):
-    producer.send(
-        topic,
-        value=json.dumps(weather_data),
-    )
-    print(f"producing message to topic {topic}")
-    producer.flush()  # Ensure the message is sent
-    print("message sent to kafka")
-
-
 if __name__ == "__main__":
 
     station_id = os.getenv("STATION_ID")
@@ -62,20 +52,13 @@ if __name__ == "__main__":
         raise Exception("STATION_ID not set")
     else:
         weather_data["station_id"] = station_id = int(station_id.split("-")[-1]) + 1
-        # print(f"station_id: {station_id}")
     
     KAFKA_BROKER = os.getenv("KAFKA_BROKER")
     KAFKA_TOPIC = os.getenv("KAFKA_TOPIC")
-    # KAFKA_BROKER = "localhost:9092"
-    # KAFKA_TOPIC = "weather_topic"
 
-    # print(f"KAFKA_BROKER: {KAFKA_BROKER}")
-    # print(f"KAFKA_TOPIC: {KAFKA_TOPIC}")
-    # print("Starting weather station...")
 
     producer = KafkaProducer(
         bootstrap_servers=KAFKA_BROKER,
-        value_serializer=lambda x: json.dumps(x).encode('utf-8'),
     )
     
     status_number = 0
@@ -92,9 +75,9 @@ if __name__ == "__main__":
         if will_drop():
             continue
 
-        send_data_to_kafka(producer, weather_data, KAFKA_TOPIC)
-
         json_message = json.dumps(weather_data)
+        producer.send(KAFKA_TOPIC, value=json_message.encode('utf-8'))
+        
         print(json_message)
 
         
