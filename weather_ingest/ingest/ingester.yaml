@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
       - name: ingester
-        image: 
+        image: ingester:latest
+        imagePullPolicy: Never
         volumeMounts:
         - name: incoming-volume
           mountPath: /data/incoming
@@ -23,7 +24,9 @@ spec:
       volumes:
       - name: incoming-volume
         hostPath:
-          path: ./ingest/data/incoming
+          path: D:/Study/data/incoming
+          type: DirectoryOrCreate
       - name: processed-volume
         hostPath:
-          path: ./ingest/data/processed
+          path: D:/Study/data/processed
+          type: DirectoryOrCreate
