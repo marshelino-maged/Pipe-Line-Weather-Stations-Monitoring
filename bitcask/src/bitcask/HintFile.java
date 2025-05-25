@@ -9,11 +9,19 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
-public class HintFile {
+public class HintFile implements AutoCloseable {
     private final Path hintPath;
+    private final FileChannel channel;
 
-    public HintFile(Path hintPath) {
+    public HintFile(Path hintPath) throws IOException {
         this.hintPath = hintPath;
+        this.channel = FileChannel.open(hintPath,
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+    }
+
+    @Override
+    public void close() throws IOException {
+        channel.close();
     }
 
     public void writeEntry(String key, long offset) throws IOException {

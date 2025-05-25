@@ -1,7 +1,8 @@
-package bitcask;
+package test;
 
 import java.io.*;
 
+import bitcask.BitCaskEngine;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -10,7 +11,7 @@ import java.io.InputStream;
 
 public class TestBitCask {
     public static void main(String[] args) throws Exception {
-        BitCaskEngine engine = new BitCaskEngine("data/segments", 1024 * 1024);
+        BitCaskEngine engine = new BitCaskEngine("data/segments", 1024, false);
 
         // Load mock data
         JSONArray readings;
@@ -42,7 +43,7 @@ public class TestBitCask {
         engine = null;
         System.gc();
 
-        BitCaskEngine recovered = new BitCaskEngine("data/segments", 1024 * 1024);
+        BitCaskEngine recovered = new BitCaskEngine("data/segments", 1024, false);
         System.out.println("Recovered value for station 1: " + recovered.get("1"));
         System.out.println("Recovered value for station 2: " + recovered.get("2"));
 
@@ -50,22 +51,6 @@ public class TestBitCask {
         System.out.println("\n--- Dumping all current key-values ---");
         for (Map.Entry<String, String> entry : recovered.dumpAll().entrySet()) {
             System.out.println(entry.getKey() + ": " + entry.getValue());
-        }
-
-        // Schedule compaction test
-        new Thread(() -> {
-            try {
-                Thread.sleep(1000);
-                recovered.compact();
-                System.out.println("[Compactor] Compaction completed.");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }).start();
-
-        for (int i = 0; i < 5; i++) {
-            Thread.sleep(1000);
-            System.out.println("Read during compaction (station 1): " + recovered.get("1"));
         }
     }
 }

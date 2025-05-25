@@ -5,16 +5,39 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.EnumSet;
+import java.util.Set;
 
-public class SegmentFile {
+public class SegmentFile implements AutoCloseable {
+    public enum Mode {
+        READ, WRITE
+    }
+
     private final Path path;
     private final FileChannel channel;
     private long currentOffset;
 
-    public SegmentFile(Path path) throws IOException {
+    public SegmentFile(Path path, Mode mode) throws IOException {
         this.path = path;
-        this.channel = FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
-        this.currentOffset = channel.size();
+
+        Set<StandardOpenOption> options;
+        if (mode == Mode.READ) {
+            options = EnumSet.of(StandardOpenOption.READ);
+        } else {
+            options = EnumSet.of(
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.APPEND
+            );
+        }
+
+        this.channel = FileChannel.open(path, options);
+        this.currentOffset = (mode == Mode.READ) ? channel.size() : 0;
+    }
+
+    @Override
+    public void close() throws IOException {
+        channel.close();
     }
 
     public synchronized long append(String key, String value) throws IOException {
@@ -60,10 +83,6 @@ public class SegmentFile {
 
     public long getCurrentOffset() {
         return currentOffset;
-    }
-
-    public void close() throws IOException {
-        channel.close();
     }
 
     public static class Record {

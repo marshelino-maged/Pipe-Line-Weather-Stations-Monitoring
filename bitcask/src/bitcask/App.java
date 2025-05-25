@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class App {
     public static void main(String[] args) throws Exception {
-        BitCaskEngine engine = new BitCaskEngine("data/segments", 1024 * 1024);
+        BitCaskEngine engine = new BitCaskEngine("data/segments", 1024 * 1024, true);
 
         if (args.length == 0 || args[0].equals("--help")) {
             System.out.println("Usage:");

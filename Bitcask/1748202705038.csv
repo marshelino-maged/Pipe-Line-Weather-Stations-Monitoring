@@ -1,0 +1,4 @@
+key,value
+1,{"station_id":3,"weather":{"temperature":45,"humidity":65,"wind_speed":13},"status_timestamp":1748092836,"battery_status":"medium"}
+2,{"station_id":2,"weather":{"temperature":36,"humidity":55,"wind_speed":6},"status_timestamp":1748092835,"battery_status":"medium"}
+3,{"station_id":2,"weather":{"temperature":30,"humidity":61,"wind_speed":13},"status_timestamp":1748092836,"battery_status":"high"}

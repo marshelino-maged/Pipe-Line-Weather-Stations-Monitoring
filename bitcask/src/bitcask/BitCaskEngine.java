@@ -19,13 +19,16 @@ public class BitCaskEngine {
     private long currentOffset = 0;
     private int segmentIndex = 0;
 
+    private int currentDataFiles = 0;
+
     private final Map<String, IndexEntry> index = new HashMap<>();
 
-    public BitCaskEngine(String dir, long segmentSizeLimit) throws IOException {
+    public BitCaskEngine(String dir, long segmentSizeLimit, boolean readOnly) throws IOException {
         this.dataDir = Paths.get(dir);
         this.segmentSizeLimit = segmentSizeLimit;
         Files.createDirectories(dataDir);
-        initSegments();
+        if(!readOnly)
+            initSegments();
         index.putAll(new IndexManager(dataDir).loadFromHintFiles());
     }
 
@@ -48,6 +51,7 @@ public class BitCaskEngine {
         activeSegment = FileChannel.open(activeSegmentPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ);
         activeHint = FileChannel.open(activeHintPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         currentOffset = activeSegment.size();
+        currentDataFiles++;
     }
 
     public void put(String key, String value) throws IOException {
@@ -81,6 +85,12 @@ public class BitCaskEngine {
 
             index.put(key, new IndexEntry(activeSegmentPath, offset, valueBytes.length));
 
+            // ✅ Auto-compact when more than 5 segment files
+            if (currentDataFiles == 5) {
+                System.out.println("[🧹] Auto-triggered compaction...");
+                currentDataFiles = 0;
+                compact();
+            }
         } finally {
             lock.unlock();
         }
@@ -135,59 +145,78 @@ public class BitCaskEngine {
     public void compact() throws IOException {
         Map<String, SegmentFile.Record> latestRecords = new HashMap<>();
 
+        // STEP 1: Read all segment files and keep only the latest record per key
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataDir, "*.data")) {
             for (Path segmentPath : stream) {
-                SegmentFile segment = new SegmentFile(segmentPath);
-                long offset = 0;
-                while (offset < segment.getCurrentOffset()) {
-                    SegmentFile.Record record = segment.read(offset);
-                    latestRecords.put(record.key, record);
+                System.out.println("[Compaction] Reading segment: " + segmentPath.getFileName());
+                try (SegmentFile segment = new SegmentFile(segmentPath, SegmentFile.Mode.READ)) {
+                    long offset = 0;
+                    while (offset < segment.getCurrentOffset()) {
+                        SegmentFile.Record record = segment.read(offset);
 
-                    int keyLen = record.key.getBytes().length;
-                    int valLen = record.value.getBytes().length;
-                    offset += 8 + keyLen + valLen;
+                        // Overwrite with newer record of the same key
+                        latestRecords.put(record.key, record);
+                        System.out.println(record.key + " -> " + record.value);
+
+                        int keyLen = record.key.getBytes().length;
+                        int valLen = record.value.getBytes().length;
+                        offset += 8 + keyLen + valLen;
+                    }
                 }
-                segment.close();
             }
         }
 
-        int compactedIndex = getNextSegmentIndex();
+        // STEP 2: Delete all old .data and .hint files
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataDir, path ->
+                path.toString().endsWith(".data") || path.toString().endsWith(".hint"))) {
+            for (Path path : stream) {
+                Files.deleteIfExists(path);
+                System.out.println("[Compaction] Deleted old file: " + path.getFileName());
+            }
+        }
+
+        // STEP 3: Create new segment and hint files
+        int compactedIndex = 0; // reset index to 0 or compute cleanly
         Path compactedPath = dataDir.resolve(compactedIndex + ".data");
         Path compactedHintPath = dataDir.resolve(compactedIndex + ".hint");
 
-        SegmentFile compactedSegment = new SegmentFile(compactedPath);
-        HintFile hintWriter = new HintFile(compactedHintPath);
+        try (
+                SegmentFile compactedSegment = new SegmentFile(compactedPath, SegmentFile.Mode.WRITE);
+                HintFile hintWriter = new HintFile(compactedHintPath)
+        ) {
+            index.clear(); // Clear old index
 
-        for (Map.Entry<String, SegmentFile.Record> entry : latestRecords.entrySet()) {
-            long offset = compactedSegment.append(entry.getKey(), entry.getValue().value);
-            hintWriter.writeEntry(entry.getKey(), offset);
-            index.put(entry.getKey(), new IndexEntry(compactedPath, offset, entry.getValue().value.length()));
-        }
+            for (Map.Entry<String, SegmentFile.Record> entry : latestRecords.entrySet()) {
+                String key = entry.getKey();
+                String value = entry.getValue().value;
+                long offset = compactedSegment.append(key, value);
+                hintWriter.writeEntry(key, offset);
 
-        compactedSegment.close();
-
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataDir, path -> path.toString().endsWith(".data") || path.toString().endsWith(".hint"))) {
-            for (Path oldPath : stream) {
-                if (!oldPath.equals(compactedPath) && !oldPath.equals(compactedHintPath)) {
-                    Files.deleteIfExists(oldPath);
-                }
+                index.put(key, new IndexEntry(compactedPath, offset, value.length()));
             }
         }
+
+        // Reset segment index and active file pointers
+        segmentIndex = 1;
+        openNewSegment();
+
+        System.out.println("[Compaction] ✅ Completed: all latest keys written to 0.data and 0.hint");
     }
 
-    private int getNextSegmentIndex() throws IOException {
-        int max = 0;
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataDir, "*.data")) {
-            for (Path path : stream) {
-                String name = path.getFileName().toString().replace(".data", "");
-                try {
-                    int idx = Integer.parseInt(name);
-                    max = Math.max(max, idx);
-                } catch (NumberFormatException ignored) {}
-            }
-        }
-        return max + 1;
-    }
+//
+//    private int getNextSegmentIndex() throws IOException {
+//        int max = 0;
+//        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataDir, "*.data")) {
+//            for (Path path : stream) {
+//                String name = path.getFileName().toString().replace(".data", "");
+//                try {
+//                    int idx = Integer.parseInt(name);
+//                    max = Math.max(max, idx);
+//                } catch (NumberFormatException ignored) {}
+//            }
+//        }
+//        return max + 1;
+//    }
 
     static class IndexEntry {
         Path path;
