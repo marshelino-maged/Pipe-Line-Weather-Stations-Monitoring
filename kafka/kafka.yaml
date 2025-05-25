@@ -54,8 +54,8 @@ spec:
               value: "0@kafka-0.kafka-service.default.svc.cluster.local:9093"
             - name: KAFKA_KRAFT_CLUSTER_ID
               value: "ErvdOSvBQo-TNiIYytokWw"
-            # - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
-            #   value: "true"
+            - name: KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE
+              value: "true"
           ports:
             - containerPort: 9092
             - containerPort: 9093
@@ -72,3 +72,17 @@ spec:
                       --bootstrap-server localhost:9092 \
                       --partitions 1 \
                       --replication-factor 1 \
+
+                      /opt/bitnami/kafka/bin/kafka-topics.sh \
+                        --create \
+                        --topic rain_alerts_topic \
+                        --bootstrap-server localhost:9092 \
+                        --partitions 1 \
+                        --replication-factor 1
+                      
+                      /opt/bitnami/kafka/bin/kafka-topics.sh \
+                        --create \
+                        --topic invalid_weather_topic \
+                        --bootstrap-server localhost:9092 \
+                        --partitions 1 \
+                        --replication-factor 1
