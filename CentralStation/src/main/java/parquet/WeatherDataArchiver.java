@@ -1,3 +1,5 @@
+package parquet;
+
 import org.apache.avro.Schema;
 
 

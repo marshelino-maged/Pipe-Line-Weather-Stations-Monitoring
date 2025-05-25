@@ -1,72 +1,39 @@
----
 apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: parquet-pv
-spec:
-  capacity:
-    storage: 1Gi
-  volumeMode: Filesystem
-  accessModes:
-    - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
-  local:
-    path: /run/desktop/mnt/host/d/Study/parquet
-  nodeAffinity:
-    required:
-      nodeSelectorTerms:
-        - matchExpressions:
-            - key: kubernetes.io/hostname
-              operator: In
-              values:
-                - docker-desktop
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: parquet-pvc
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
-  storageClassName: local-storage
----
-apiVersion: apps/v1
-kind: Deployment
+kind: Pod
 metadata:
   name: central-station
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: central-station
-  template:
-    metadata:
-      labels:
-        app: central-station
-    spec:
-      containers:
-        - name: central-station
-          image: central-station
-          imagePullPolicy: Never
-          env:
-            - name: KAFKA_BROKER_HOST
-              value: "kafka-service:9092"
-            - name: KAFKA_CONSUMER_GROUP_ID
-              value: "weather-consumer-group"
-            - name: KAFKA_CONSUMER_TOPIC
-              value: "weather_topic"
-            - name: KAFKA_INVALID_TOPIC
-              value: "invalid_weather_topic"
-            - name: PARQUET_DIRECTORY
-              value: "parquet"
-          volumeMounts:
-            - name: parquet-storage
-              mountPath: parquet
-      volumes:
-        - name: parquet-storage
-          persistentVolumeClaim:
-            claimName: parquet-pvc
+  containers:
+    - name: central-station
+      image: central-station
+      imagePullPolicy: Never
+      env:
+        - name: KAFKA_BROKER_HOST
+          value: "kafka-service:9092"
+        - name: KAFKA_CONSUMER_GROUP_ID
+          value: "weather-consumer-group"
+        - name: KAFKA_CONSUMER_TOPIC
+          value: "weather_topic"
+        - name: KAFKA_INVALID_TOPIC
+          value: "invalid_weather_topic"
+        - name: PARQUET_DIRECTORY
+          value: "/parquet"
+        - name: BITCASK_DIRECTORY
+          value: "/bitcask"
+        - name: BITCASK_MAX_BYTES
+          value: "4096"
+      volumeMounts:
+        - name: bitcask-data
+          mountPath: /bitcask
+        - name: parquet-data
+          mountPath: /parquet
+
+  volumes:
+    - name: bitcask-data
+      hostPath:
+        path: /run/desktop/mnt/host/d/Study/Semester 8/Data Intensive/Project/Pipe-Line-Weather-Stations-Monitoring/data/bitcask
+        type: DirectoryOrCreate
+    - name: parquet-data
+      hostPath:
+        path: /run/desktop/mnt/host/d/Study/Semester 8/Data Intensive/Project/Pipe-Line-Weather-Stations-Monitoring/data/parquet
+        type: DirectoryOrCreate

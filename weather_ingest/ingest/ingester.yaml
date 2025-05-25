@@ -1,32 +1,25 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Pod
 metadata:
   name: ingester
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ingester
-  template:
-    metadata:
-      labels:
-        app: ingester
-    spec:
-      containers:
-      - name: ingester
-        image: ingester:latest
-        imagePullPolicy: Never
-        volumeMounts:
-        - name: incoming-volume
-          mountPath: /data/incoming
-        - name: processed-volume
-          mountPath: /data/processed
-      volumes:
-      - name: incoming-volume
-        hostPath:
-          path: D:/Study/data/incoming
-          type: DirectoryOrCreate
-      - name: processed-volume
-        hostPath:
-          path: D:/Study/data/processed
-          type: DirectoryOrCreate
+  containers:
+    - name: ingester
+      image: ingester
+      imagePullPolicy: Never
+      env:
+        - name: PARQUET_FOLDER
+          value: "/parquet"
+        - name: ES_INDEX
+          value: "weather_data"
+        - name: ELASTICSEARCH_HOST
+          value: "http://elasticsearch-kibana:9200"
+      volumeMounts:
+        - name: parquet-data
+          mountPath: /parquet
+
+  volumes:
+    - name: parquet-data
+      hostPath:
+        path: /run/desktop/mnt/host/d/Study/Semester 8/Data Intensive/Project/Pipe-Line-Weather-Stations-Monitoring/data/parquet
+        type: DirectoryOrCreate
