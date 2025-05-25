@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-processor
+  template:
+    metadata:
+      labels:
+        app: kafka-processor
+    spec:
+      containers:
+        - name: kafka-processor
+          image: kafka_processor
+          imagePullPolicy: Never
+          env:
+            - name: KAFKA_BROKER
+              value: "kafka-service:9092"
+            - name: KAFKA_READ_TOPIC
+              value: "weather_topic"
+            - name: KAFKA_WRITE_TOPIC
+              value: "rain_alerts_topic"
+            - name: KAFKA_INVALID_TOPIC
+              value: "invalid_weather_topic"
