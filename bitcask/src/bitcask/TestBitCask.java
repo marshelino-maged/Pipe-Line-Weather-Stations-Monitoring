@@ -21,11 +21,11 @@ public class TestBitCask {
         // Write mock data
         for (int i = 0; i < readings.length(); i++) {
             JSONObject obj = readings.getJSONObject(i);
-            String stationId = String.valueOf(obj.getInt("station_id"));
+            String stationId = String.valueOf(obj.getInt("s_no"));
 
             // Construct a combined object to store
             JSONObject combined = new JSONObject();
-            combined.put("s_no", obj.getInt("s_no"));
+            combined.put("station_id", obj.getInt("station_id"));
             combined.put("battery_status", obj.getString("battery_status"));
             combined.put("status_timestamp", obj.getLong("status_timestamp"));
             combined.put("weather", obj.getJSONObject("weather"));
@@ -34,7 +34,7 @@ public class TestBitCask {
             String value = combined.toString();
             engine.put(stationId, value);
 
-            System.out.println("PUT: station_id=" + stationId + ", value=" + value);
+            System.out.println("PUT: s_no=" + stationId + ", value=" + value);
         }
 
 

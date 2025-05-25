@@ -30,14 +30,17 @@ public class BitCaskEngine {
     }
 
     private void initSegments() throws IOException {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dataDir, "*.data")) {
-            for (Path path : stream) {
-                int idx = Integer.parseInt(path.getFileName().toString().replace(".data", ""));
-                segmentIndex = Math.max(segmentIndex, idx);
+        // Start from 0 and keep incrementing until the file doesn't exist
+        while (true) {
+            Path candidatePath = dataDir.resolve(segmentIndex + ".data");
+            if (!Files.exists(candidatePath)) {
+                break; // found unused index
             }
+            segmentIndex++;
         }
         openNewSegment();
     }
+
 
     private void openNewSegment() throws IOException {
         activeSegmentPath = dataDir.resolve(segmentIndex + ".data");
