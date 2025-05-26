@@ -69,7 +69,7 @@ def send_to_kafka(producer: KafkaProducer, topic: str, message: dict):
     print("Sending:", message)
     producer.send(topic, key=message['station_id'], value=message)
     producer.flush()
-    print("✔ Sent:", message)
+    print("Sent:", message)
 
 def collect_and_send():
     for station in stations:
@@ -81,13 +81,13 @@ def collect_and_send():
             print(message)
             send_to_kafka(producer, KAFKA_TOPIC, message)
         except Exception as e:
-            print(f"✘ Error for station {station_id}:", e)
+            print(f"Error for station {station_id}:", e)
 
 if __name__ == "__main__":
     collect_and_send()
     schedule.every(1).seconds.do(collect_and_send)
 
-    print("🚀 Weather data producer started for multiple stations.")
+    print("Weather data producer started for multiple stations.")
 
     while True:
         schedule.run_pending()
