@@ -1,0 +1,131 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "description": "Low battery count and total messages per station",
+  "padding": 5,
+
+  "data": [
+    {
+      "name": "stations",
+      "url": {
+        "%context%": true,
+        "index": "weather_data",
+        "body": {
+          "size": 0,
+          "aggs": {
+            "by_station": {
+              "terms": { "field": "station_id", "size": 100 },
+              "aggs": {
+                "low_battery": {
+                  "filter": {
+                    "term": { "battery_status": "low" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "format": {
+        "property": "aggregations.by_station.buckets"
+      },
+      "transform": [
+        {
+          "type": "formula",
+          "as": "station_id",
+          "expr": "datum.key"
+        },
+        {
+          "type": "formula",
+          "as": "total_count",
+          "expr": "datum.doc_count"
+        },
+        {
+          "type": "formula",
+          "as": "low_battery_count",
+          "expr": "datum.low_battery.doc_count"
+        },
+        {
+          "type": "fold",
+          "fields": ["total_count", "low_battery_count"],
+          "as": ["type", "count"]
+        }
+      ]
+    }
+  ],
+
+  "scales": [
+    {
+      "name": "x",
+      "type": "band",
+      "domain": { "data": "stations", "field": "station_id" },
+      "range": "width",
+      "padding": 0.2
+    },
+    {
+      "name": "xsub",
+      "type": "band",
+      "domain": ["total_count", "low_battery_count"],
+      "range": [0, { "signal": "bandwidth('x')" }],
+      "padding": 0.05
+    },
+    {
+      "name": "y",
+      "type": "linear",
+      "domain": { "data": "stations", "field": "count" },
+      "nice": true,
+      "range": "height"
+    },
+    {
+      "name": "color",
+      "type": "ordinal",
+      "domain": ["total_count", "low_battery_count"],
+      "range": ["#1f77b4", "#d62728"]
+    }
+  ],
+
+  "axes": [
+    { "orient": "bottom", "scale": "x", "title": "Station ID" },
+    { "orient": "left", "scale": "y", "title": "Count" }
+  ],
+
+  "legends": [
+    {
+      "fill": "color",
+      "title": "Status Type",
+      "orient": "top-right"
+    }
+  ],
+
+  "marks": [
+    {
+      "type": "group",
+      "from": {
+        "facet": {
+          "name": "facet",
+          "data": "stations",
+          "groupby": "station_id"
+        }
+      },
+      "encode": {
+        "enter": {
+          "x": { "scale": "x", "field": "station_id" }
+        }
+      },
+      "marks": [
+        {
+          "type": "rect",
+          "from": { "data": "facet" },
+          "encode": {
+            "enter": {
+              "x": { "scale": "xsub", "field": "type" },
+              "width": { "scale": "xsub", "band": 1 },
+              "y": { "scale": "y", "field": "count" },
+              "y2": { "scale": "y", "value": 0 },
+              "fill": { "scale": "color", "field": "type" }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

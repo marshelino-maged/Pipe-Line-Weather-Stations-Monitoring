@@ -6,6 +6,14 @@ spec:
   containers:
     - name: central-station
       image: central-station
+#      command: [ "sh", "-c" ]
+#      args:
+#        - |
+#          echo "Starting Java with JFR...";
+#          java \
+#            -XX:StartFlightRecording=filename=/parquet/jfr/recording.jfr,duration=180s,settings=profile \
+#            -jar app.jar;
+#          echo "Java process done, sleeping...";
       imagePullPolicy: Never
       env:
         - name: KAFKA_BROKER_HOST

@@ -1,0 +1,102 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "description": "Dropped message percentage per station based on s_no gaps",
+
+  "data": [
+    {
+      "name": "stations",
+      "url": {
+        "%context%": true,
+        "index": "weather_data",
+        "body": {
+          "size": 0,
+          "aggs": {
+            "by_station": {
+              "terms": { "field": "station_id", "size": 100 },
+              "aggs": {
+                "min_sno": { "min": { "field": "s_no" } },
+                "max_sno": { "max": { "field": "s_no" } },
+                "count_sno": { "cardinality": { "field": "s_no" } }
+              }
+            }
+          }
+        }
+      },
+      "format": { "property": "aggregations.by_station.buckets" },
+      "transform": [
+        {
+          "type": "formula",
+          "as": "expected_count",
+          "expr": "datum.max_sno.value - datum.min_sno.value + 1"
+        },
+        {
+          "type": "formula",
+          "as": "dropped_count",
+          "expr": "datum.expected_count - datum.count_sno.value"
+        },
+        {
+          "type": "formula",
+          "as": "dropped_percentage",
+          "expr": "datum.dropped_count / datum.expected_count"
+        }
+      ]
+    }
+  ],
+
+  "scales": [
+    {
+      "name": "x",
+      "type": "band",
+      "domain": { "data": "stations", "field": "key" },
+      "range": "width",
+      "padding": 0.1
+    },
+    {
+      "name": "y",
+      "type": "linear",
+      "domain": [0, 1],
+      "range": "height",
+      "nice": true
+    }
+  ],
+
+  "axes": [
+    { "orient": "bottom", "scale": "x", "title": "Station ID" },
+    { "orient": "left", "scale": "y", "title": "Dropped Messages %", "format": "%" }
+  ],
+
+  "marks": [
+    {
+      "type": "rect",
+      "from": { "data": "stations" },
+      "encode": {
+        "enter": {
+          "x": { "scale": "x", "field": "key" },
+          "width": { "scale": "x", "band": 1 },
+          "y": { "scale": "y", "field": "dropped_percentage" },
+          "y2": { "scale": "y", "value": 0 },
+          "fill": { "value": "#d62728" }
+        },
+        "hover": {
+          "fill": { "value": "#ff7f0e" }
+        }
+      }
+    },
+    {
+      "type": "text",
+      "from": { "data": "stations" },
+      "encode": {
+        "enter": {
+          "x": { "scale": "x", "field": "key", "offset": 5 },
+          "y": { "scale": "y", "field": "dropped_percentage", "offset": -5 },
+          "text": {
+            "signal": "format(datum.dropped_percentage, '.1%')"
+          },
+          "fill": { "value": "#000" },
+          "fontWeight": "bold",
+          "fontSize": 30
+        }
+      }
+    }
+  ]
+}

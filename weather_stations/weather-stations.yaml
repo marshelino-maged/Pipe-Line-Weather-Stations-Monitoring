@@ -4,7 +4,7 @@ metadata:
   name: weather-stations
 spec:
   serviceName: "weather-station-service"
-  replicas: 2
+  replicas: 10
   selector:
     matchLabels:
       app: weather-station
